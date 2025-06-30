@@ -19,10 +19,10 @@ const GameBoard = styled.div`
   width: 100%;
   padding-bottom: 100%;
   background-color: #75cfff;
-  border: 10px dashed red;
+  border: 10px dashed red; /* 10px border on each side */
   margin: 20px auto;
   box-sizing: border-box;
-  touch-action: manipulation; /* allows better touch interaction */
+  touch-action: manipulation;
 `;
 
 const Segment = styled.div`
@@ -53,11 +53,9 @@ const Button = styled.button`
   border-radius: 7px;
   cursor: pointer;
   transition: 0.3s ease;
-
   &:hover:enabled {
     background-color: red;
   }
-
   &:disabled {
     background-color: grey;
     cursor: not-allowed;
@@ -100,11 +98,13 @@ const ControlBtn = styled.button`
   }
 `;
 
-const scale = 20; // one grid cell size in px
+const scale = 20; // grid cell size
 
 const App = () => {
-  const boardRef = useRef(null); // ✅ ref to measure GameBoard's real size
-  const [boardSize, setBoardSize] = useState(null); // ✅ dynamic board size
+  const boardRef = useRef(null);
+  const [boardSize, setBoardSize] = useState(null);
+  const [playAreaSize, setPlayAreaSize] = useState(null); // corrected playable area size
+  const borderThickness = 10; // as in CSS
 
   const [snake, setSnake] = useState([]);
   const [food, setFood] = useState({ x: 0, y: 0 });
@@ -117,11 +117,12 @@ const App = () => {
 
   const gameLoopRef = useRef(null);
 
-  // ✅ Measure board size on mount & resize
   useEffect(() => {
     const measureBoard = () => {
       if (boardRef.current) {
-        setBoardSize(boardRef.current.offsetWidth);
+        const fullSize = boardRef.current.offsetWidth;
+        setBoardSize(fullSize);
+        setPlayAreaSize(fullSize - 2 * borderThickness);
       }
     };
     measureBoard();
@@ -134,11 +135,11 @@ const App = () => {
   }, []);
 
   const startGame = () => {
-    if (boardSize === null) return; // wait until board size is ready
-    const startPos = Math.floor(boardSize / (2 * scale)) * scale; // center on grid
+    if (playAreaSize === null) return;
+    const startPos = Math.floor(playAreaSize / (2 * scale)) * scale;
     const startSnake = [{ x: startPos, y: startPos }];
     setSnake(startSnake);
-    setFood(generateFood(startSnake, boardSize));
+    setFood(generateFood(startSnake, playAreaSize));
     setDx(scale);
     setDy(0);
     setIsRunning(true);
@@ -163,15 +164,15 @@ const App = () => {
   }, [snake, isRunning]);
 
   const moveSnake = () => {
-    if (boardSize === null) return;
+    if (playAreaSize === null) return;
     const newHead = { x: snake[0].x + dx, y: snake[0].y + dy };
     const newSnake = [newHead, ...snake];
 
     if (
       newHead.x < 0 ||
-      newHead.x >= boardSize ||
+      newHead.x >= playAreaSize ||
       newHead.y < 0 ||
-      newHead.y >= boardSize ||
+      newHead.y >= playAreaSize ||
       newSnake.slice(1).some((segment) => segment.x === newHead.x && segment.y === newHead.y)
     ) {
       gameOver();
@@ -179,7 +180,7 @@ const App = () => {
     }
 
     if (newHead.x === food.x && newHead.y === food.y) {
-      setFood(generateFood(newSnake, boardSize));
+      setFood(generateFood(newSnake, playAreaSize));
       setScore((prev) => prev + 1);
     } else {
       newSnake.pop();
@@ -225,9 +226,9 @@ const App = () => {
       </ScoreBoard>
       <GameBoard ref={boardRef}>
         {snake.map((segment, idx) => (
-          <Segment key={idx} style={{ left: segment.x, top: segment.y }} />
+          <Segment key={idx} style={{ left: segment.x + borderThickness, top: segment.y + borderThickness }} />
         ))}
-        <Food style={{ left: food.x, top: food.y }} />
+        <Food style={{ left: food.x + borderThickness, top: food.y + borderThickness }} />
       </GameBoard>
 
       {isTouch && isRunning && (
@@ -246,7 +247,7 @@ const App = () => {
         </div>
       )}
 
-      <Button onClick={startGame} disabled={isRunning || boardSize === null}>
+      <Button onClick={startGame} disabled={isRunning || playAreaSize === null}>
         {isRunning ? "Game Running..." : score > 0 ? "Play Again!" : "Start Game"}
       </Button>
 
@@ -255,9 +256,9 @@ const App = () => {
   );
 };
 
-const generateFood = (snake, boardSize) => {
+const generateFood = (snake, playAreaSize) => {
   let x, y;
-  const cells = Math.floor(boardSize / scale);
+  const cells = Math.floor(playAreaSize / scale);
   do {
     x = Math.floor(Math.random() * cells) * scale;
     y = Math.floor(Math.random() * cells) * scale;
