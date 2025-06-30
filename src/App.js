@@ -100,12 +100,14 @@ const ControlBtn = styled.button`
   }
 `;
 
-const scale = 20;
-const boardSize = 480;
+const scale = 20; // one grid cell size in px
 
 const App = () => {
-  const [snake, setSnake] = useState([{ x: boardSize / 2, y: boardSize / 2 }]);
-  const [food, setFood] = useState(generateFood([{ x: boardSize / 2, y: boardSize / 2 }]));
+  const boardRef = useRef(null); // ✅ ref to measure GameBoard's real size
+  const [boardSize, setBoardSize] = useState(null); // ✅ dynamic board size
+
+  const [snake, setSnake] = useState([]);
+  const [food, setFood] = useState({ x: 0, y: 0 });
   const [dx, setDx] = useState(scale);
   const [dy, setDy] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -115,13 +117,28 @@ const App = () => {
 
   const gameLoopRef = useRef(null);
 
+  // ✅ Measure board size on mount & resize
+  useEffect(() => {
+    const measureBoard = () => {
+      if (boardRef.current) {
+        setBoardSize(boardRef.current.offsetWidth);
+      }
+    };
+    measureBoard();
+    window.addEventListener("resize", measureBoard);
+    return () => window.removeEventListener("resize", measureBoard);
+  }, []);
+
   useEffect(() => {
     setIsTouch("ontouchstart" in window);
   }, []);
 
   const startGame = () => {
-    setSnake([{ x: boardSize / 2, y: boardSize / 2 }]);
-    setFood(generateFood([{ x: boardSize / 2, y: boardSize / 2 }]));
+    if (boardSize === null) return; // wait until board size is ready
+    const startPos = Math.floor(boardSize / (2 * scale)) * scale; // center on grid
+    const startSnake = [{ x: startPos, y: startPos }];
+    setSnake(startSnake);
+    setFood(generateFood(startSnake, boardSize));
     setDx(scale);
     setDy(0);
     setIsRunning(true);
@@ -146,6 +163,7 @@ const App = () => {
   }, [snake, isRunning]);
 
   const moveSnake = () => {
+    if (boardSize === null) return;
     const newHead = { x: snake[0].x + dx, y: snake[0].y + dy };
     const newSnake = [newHead, ...snake];
 
@@ -161,7 +179,7 @@ const App = () => {
     }
 
     if (newHead.x === food.x && newHead.y === food.y) {
-      setFood(generateFood(newSnake));
+      setFood(generateFood(newSnake, boardSize));
       setScore((prev) => prev + 1);
     } else {
       newSnake.pop();
@@ -205,7 +223,7 @@ const App = () => {
         <Score>Current Score: {score}</Score>
         <Score>High Score: {highScore}</Score>
       </ScoreBoard>
-      <GameBoard>
+      <GameBoard ref={boardRef}>
         {snake.map((segment, idx) => (
           <Segment key={idx} style={{ left: segment.x, top: segment.y }} />
         ))}
@@ -228,7 +246,7 @@ const App = () => {
         </div>
       )}
 
-      <Button onClick={startGame} disabled={isRunning}>
+      <Button onClick={startGame} disabled={isRunning || boardSize === null}>
         {isRunning ? "Game Running..." : score > 0 ? "Play Again!" : "Start Game"}
       </Button>
 
@@ -237,11 +255,12 @@ const App = () => {
   );
 };
 
-const generateFood = (snake) => {
+const generateFood = (snake, boardSize) => {
   let x, y;
+  const cells = Math.floor(boardSize / scale);
   do {
-    x = Math.floor(Math.random() * (boardSize / scale)) * scale;
-    y = Math.floor(Math.random() * (boardSize / scale)) * scale;
+    x = Math.floor(Math.random() * cells) * scale;
+    y = Math.floor(Math.random() * cells) * scale;
   } while (snake.some((s) => s.x === x && s.y === y));
   return { x, y };
 };
