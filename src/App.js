@@ -19,7 +19,7 @@ const GameBoard = styled.div`
   width: 100%;
   padding-bottom: 100%;
   background-color: #75cfff;
-  border: 10px dashed red; /* 10px border on each side */
+  border: 10px dashed red;
   margin: 20px auto;
   box-sizing: border-box;
   touch-action: manipulation;
@@ -98,13 +98,12 @@ const ControlBtn = styled.button`
   }
 `;
 
-const scale = 20; // grid cell size
+const scale = 20;
 
 const App = () => {
   const boardRef = useRef(null);
-  const [boardSize, setBoardSize] = useState(null);
-  const [playAreaSize, setPlayAreaSize] = useState(null); // corrected playable area size
-  const borderThickness = 10; // as in CSS
+  const [playAreaSize, setPlayAreaSize] = useState(null);
+  const borderThickness = 10;
 
   const [snake, setSnake] = useState([]);
   const [food, setFood] = useState({ x: 0, y: 0 });
@@ -121,7 +120,6 @@ const App = () => {
     const measureBoard = () => {
       if (boardRef.current) {
         const fullSize = boardRef.current.offsetWidth;
-        setBoardSize(fullSize);
         setPlayAreaSize(fullSize - 2 * borderThickness);
       }
     };
@@ -168,11 +166,12 @@ const App = () => {
     const newHead = { x: snake[0].x + dx, y: snake[0].y + dy };
     const newSnake = [newHead, ...snake];
 
+    // Corrected collision check to allow head to occupy last cell fully
     if (
       newHead.x < 0 ||
-      newHead.x >= playAreaSize ||
+      newHead.x > playAreaSize - scale ||
       newHead.y < 0 ||
-      newHead.y >= playAreaSize ||
+      newHead.y > playAreaSize - scale ||
       newSnake.slice(1).some((segment) => segment.x === newHead.x && segment.y === newHead.y)
     ) {
       gameOver();
