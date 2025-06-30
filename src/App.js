@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 
-
 const Container = styled.div`
   text-align: center;
   width: 90vw;
@@ -23,6 +22,7 @@ const GameBoard = styled.div`
   border: 10px dashed red;
   margin: 20px auto;
   box-sizing: border-box;
+  touch-action: manipulation; /* allows better touch interaction */
 `;
 
 const Segment = styled.div`
@@ -85,7 +85,20 @@ const GameOver = styled.div`
   text-shadow: 2px 2px 6px #000;
 `;
 
-
+const ControlBtn = styled.button`
+  padding: 15px;
+  margin: 5px;
+  font-size: 1.8em;
+  border: none;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+  cursor: pointer;
+  &:active {
+    background: #ff5252;
+    color: white;
+  }
+`;
 
 const scale = 20;
 const boardSize = 480;
@@ -97,11 +110,14 @@ const App = () => {
   const [dy, setDy] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(
-    Number(localStorage.getItem("highScore")) || 0
-  );
+  const [highScore, setHighScore] = useState(Number(localStorage.getItem("highScore")) || 0);
+  const [isTouch, setIsTouch] = useState(false);
 
   const gameLoopRef = useRef(null);
+
+  useEffect(() => {
+    setIsTouch("ontouchstart" in window);
+  }, []);
 
   const startGame = () => {
     setSnake([{ x: boardSize / 2, y: boardSize / 2 }]);
@@ -170,6 +186,13 @@ const App = () => {
     }
   };
 
+  const setDir = (newDx, newDy) => {
+    if ((newDx !== 0 && dx === 0) || (newDy !== 0 && dy === 0)) {
+      setDx(newDx);
+      setDy(newDy);
+    }
+  };
+
   useEffect(() => {
     window.addEventListener("keydown", changeDirection);
     return () => window.removeEventListener("keydown", changeDirection);
@@ -188,9 +211,27 @@ const App = () => {
         ))}
         <Food style={{ left: food.x, top: food.y }} />
       </GameBoard>
+
+      {isTouch && isRunning && (
+        <div style={{ margin: "20px 0" }}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <ControlBtn onClick={() => setDir(0, -scale)}>⬆️</ControlBtn>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <ControlBtn onClick={() => setDir(-scale, 0)}>⬅️</ControlBtn>
+            <div style={{ width: "20px" }} />
+            <ControlBtn onClick={() => setDir(scale, 0)}>➡️</ControlBtn>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <ControlBtn onClick={() => setDir(0, scale)}>⬇️</ControlBtn>
+          </div>
+        </div>
+      )}
+
       <Button onClick={startGame} disabled={isRunning}>
         {isRunning ? "Game Running..." : score > 0 ? "Play Again!" : "Start Game"}
       </Button>
+
       {!isRunning && score > 0 && <GameOver>Game Over! Your score: {score}</GameOver>}
     </Container>
   );

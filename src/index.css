@@ -2,6 +2,8 @@ body, html, #root {
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
+  overflow-x: hidden; /* prevents horizontal scrollbar */
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg, #a8e6ff, #59bfff);
   display: flex;
